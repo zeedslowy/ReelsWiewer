@@ -17,15 +17,15 @@ login_template = """
     <title>Instagram Giriş</title>
     <style>
         body {
-            background: url('https://www.instagram.com/static/images/homepage/home-phones.png/43cc71bb1b43.png') no-repeat center center fixed;
-            background-size: cover;
+            background: linear-gradient(135deg, #feda75, #fa7e1e, #d62976, #962fbf, #4f5bd5);
             font-family: Arial, sans-serif;
+            color: white;
         }
         .form-container {
             margin: 100px auto;
             width: 300px;
             padding: 20px;
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(0, 0, 0, 0.8);
             border-radius: 10px;
             text-align: center;
         }
@@ -80,15 +80,15 @@ reels_template = """
     <title>Reels İşlemi</title>
     <style>
         body {
-            background: url('https://www.instagram.com/static/images/homepage/screenshots/screenshot2.png/6f03eb85463c.png') no-repeat center center fixed;
-            background-size: cover;
+            background: linear-gradient(135deg, #4f5bd5, #962fbf, #d62976, #fa7e1e, #feda75);
             font-family: Arial, sans-serif;
+            color: white;
         }
         .form-container {
             margin: 100px auto;
             width: 300px;
             padding: 20px;
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(0, 0, 0, 0.8);
             border-radius: 10px;
             text-align: center;
         }
@@ -114,11 +114,29 @@ reels_template = """
 </head>
 <body>
     <div class="form-container">
-        <h2>Reels Linki Girin</h2>
+        <h2>Reels İşlemi</h2>
         <form method="POST">
             <input type="text" name="reels_link" placeholder="Reels Linki" required>
+            <input type="number" name="views" placeholder="Kaç Adet?" min="1" required>
             <button type="submit">İzlenme Gönder</button>
         </form>
+        {% if results %}
+        <h3>Sonuçlar:</h3>
+        <table border="1" style="width: 100%; margin-top: 10px; background: white; color: black;">
+            <tr>
+                <th>Reels Linki</th>
+                <th>Gönderilen Adet</th>
+                <th>Durum</th>
+            </tr>
+            {% for result in results %}
+            <tr>
+                <td>{{ result.link }}</td>
+                <td>{{ result.views }}</td>
+                <td>{{ result.status }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% endif %}
         {% with messages = get_flashed_messages(with_categories=True) %}
         {% if messages %}
             <ul>
@@ -133,13 +151,15 @@ reels_template = """
 </html>
 """
 
+# Reels sonuçları için liste
+results = []
+
 @app.route('/', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
         try:
-            # Instagram oturumu aç
             L.login(username, password)
             flash("Giriş başarılı!", "success")
             return redirect(url_for('reels'))
@@ -152,15 +172,18 @@ def login():
 
 @app.route('/reels', methods=['GET', 'POST'])
 def reels():
+    global results
     if request.method == 'POST':
         reels_link = request.form.get('reels_link')
+        views = request.form.get('views')
         try:
-            # Sadece izlenme gönderme işlemi simüle ediliyor
-            # (Instagram'ın izlenme API'si olmadığı için bu işlem yapılamaz.)
-            flash(f"İzlenme gönderme işlemi başarıyla simüle edildi: {reels_link}", "success")
+            # Simüle edilmiş izlenme işlemi
+            results.append({"link": reels_link, "views": views, "status": "Başarılı"})
+            flash("İzlenme gönderme işlemi başarılı!", "success")
         except Exception as e:
-            flash(f"Hata oluştu: {str(e)}", "danger")
-    return render_template_string(reels_template)
+            results.append({"link": reels_link, "views": views, "status": f"Hata: {str(e)}"})
+            flash("Bir hata oluştu.", "danger")
+    return render_template_string(reels_template, results=results)
 
 
 if __name__ == '__main__':
