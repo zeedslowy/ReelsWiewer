@@ -2,56 +2,73 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from time import sleep
 
-# Geckodriver yolunu belirtin
+# GECKO DRIVER YOLU
 gecko_driver_path = 'geckodriver'
 
-# WebDriver ayarları
+# WEBDRIVER AYARI
 service = Service(gecko_driver_path)
 options = Options()
-options.add_argument("--headless")  # Tarayıcıyı başsız modda çalıştırmak için (isteğe bağlı)
+options.add_argument("--headless")  # Tarayıcıyı başsız modda çalıştırır
 
-# WebDriver'ı başlatın
+# WEBDRIVER BAŞLAT
 driver = webdriver.Firefox(service=service, options=options)
 
-# Instagram giriş bilgileri
-username = "kullanici_adi"  # Buraya kendi kullanıcı adınızı girin
-password = "sifre"          # Buraya kendi şifrenizi girin
+# İnstagram giriş bilgileri
+username = 'mehmetsenturk750'
+password = 'mehmet1'
 
-# Instagram URL'si
+# İnstagram URL
 url = 'https://www.instagram.com'
 
-# Instagram'da giriş yapma fonksiyonu
+# İnstagram'a giriş fonksiyonu
 def login_to_instagram(driver, username, password):
     driver.get(url)
-    sleep(2)
-    # Kullanıcı adı ve parola alanlarını bulma
-    username_input = driver.find_element("name", "username")
-    password_input = driver.find_element("name", "password")
-    # Kullanıcı adı ve parolayı girme
+    WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.NAME, "username"))
+    )
+
+    # Kullanıcı adı ve şifre alanlarını bul
+    username_input = driver.find_element(By.NAME, "username")
+    password_input = driver.find_element(By.NAME, "password")
+
+    # Kullanıcı adı ve şifreyi gir
     username_input.send_keys(username)
     password_input.send_keys(password)
-    # Giriş yapma
-    password_input.send_keys(Keys.RETURN)
-    sleep(6)
 
-# Sayfayı belirli aralıklarla yenileme fonksiyonu
+    # Giriş yap
+    password_input.send_keys(Keys.RETURN)
+    sleep(6)  # Oturum açmanın tamamlanmasını bekler
+
+# Sayfayı belirli aralıklarla yenileme
 def refresh_page(driver, target_url, refresh_interval=5, refresh_count=15):
     driver.get(target_url)
-    for _ in range(refresh_count):
+    for i in range(refresh_count):
         sleep(refresh_interval)
         driver.refresh()
-        print(f'Refreshed the page {_+1} times')
+        print(f'Sayfa {i+1} defa yenilendi')
 
-# Instagram'a giriş yap
-login_to_instagram(driver, username, password)
+# Giriş yap
+try:
+    login_to_instagram(driver, username, password)
+    print("Giriş başarılı!")
+except Exception as e:
+    print(f"Giriş sırasında bir hata oluştu: {e}")
+    driver.quit()
+    exit()
 
-# Yenilemek istediğiniz Instagram sayfasının URL'sini girin
-target_url = 'https://www.instagram.com/reel/C-Vk6RXPXKE/'
+# Yenilenecek hedef URL (örnek reels içeriği)
+target_url = 'https://www.instagram.com/reel/Cqb2zmGonJm/'
 
 # Yenileme işlemini başlat
-refresh_page(driver, target_url)
+try:
+    refresh_page(driver, target_url)
+except Exception as e:
+    print(f"Yenileme sırasında bir hata oluştu: {e}")
 
-# WebDriver'ı kapatın
+# WebDriver'ı kapat
 driver.quit()
