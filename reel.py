@@ -1,190 +1,57 @@
-import instaloader
-from flask import Flask, render_template_string, request, flash, redirect, url_for
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.firefox.service import Service
+from selenium.webdriver.firefox.options import Options
+from time import sleep
 
-app = Flask(__name__)
-app.secret_key = 'super_secret_key'
+# Geckodriver yolunu belirtin
+gecko_driver_path = 'geckodriver'
 
-# Instaloader nesnesi
-L = instaloader.Instaloader()
+# WebDriver ayarları
+service = Service(gecko_driver_path)
+options = Options()
+options.add_argument("--headless")  # Tarayıcıyı başsız modda çalıştırmak için (isteğe bağlı)
 
-# HTML ŞABLONLARI
-login_template = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instagram Giriş</title>
-    <style>
-        body {
-            background: linear-gradient(135deg, #feda75, #fa7e1e, #d62976, #962fbf, #4f5bd5);
-            font-family: Arial, sans-serif;
-            color: white;
-        }
-        .form-container {
-            margin: 100px auto;
-            width: 300px;
-            padding: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            border-radius: 10px;
-            text-align: center;
-        }
-        input {
-            width: 90%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-        button {
-            padding: 10px 20px;
-            background: #3897f0;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background: #287dc0;
-        }
-    </style>
-</head>
-<body>
-    <div class="form-container">
-        <h2>Instagram Giriş</h2>
-        <form method="POST">
-            <input type="text" name="username" placeholder="Kullanıcı Adı" required>
-            <input type="password" name="password" placeholder="Şifre" required>
-            <button type="submit">Giriş Yap</button>
-        </form>
-        {% with messages = get_flashed_messages(with_categories=True) %}
-        {% if messages %}
-            <ul>
-            {% for category, message in messages %}
-                <li style="color: {{ 'green' if category == 'success' else 'red' }};">{{ message }}</li>
-            {% endfor %}
-            </ul>
-        {% endif %}
-        {% endwith %}
-    </div>
-</body>
-</html>
-"""
+# WebDriver'ı başlatın
+driver = webdriver.Firefox(service=service, options=options)
 
-reels_template = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reels İşlemi</title>
-    <style>
-        body {
-            background: linear-gradient(135deg, #4f5bd5, #962fbf, #d62976, #fa7e1e, #feda75);
-            font-family: Arial, sans-serif;
-            color: white;
-        }
-        .form-container {
-            margin: 100px auto;
-            width: 300px;
-            padding: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            border-radius: 10px;
-            text-align: center;
-        }
-        input {
-            width: 90%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-        button {
-            padding: 10px 20px;
-            background: #3897f0;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background: #287dc0;
-        }
-    </style>
-</head>
-<body>
-    <div class="form-container">
-        <h2>Reels İşlemi</h2>
-        <form method="POST">
-            <input type="text" name="reels_link" placeholder="Reels Linki" required>
-            <input type="number" name="views" placeholder="Kaç Adet?" min="1" required>
-            <button type="submit">İzlenme Gönder</button>
-        </form>
-        {% if results %}
-        <h3>Sonuçlar:</h3>
-        <table border="1" style="width: 100%; margin-top: 10px; background: white; color: black;">
-            <tr>
-                <th>Reels Linki</th>
-                <th>Gönderilen Adet</th>
-                <th>Durum</th>
-            </tr>
-            {% for result in results %}
-            <tr>
-                <td>{{ result.link }}</td>
-                <td>{{ result.views }}</td>
-                <td>{{ result.status }}</td>
-            </tr>
-            {% endfor %}
-        </table>
-        {% endif %}
-        {% with messages = get_flashed_messages(with_categories=True) %}
-        {% if messages %}
-            <ul>
-            {% for category, message in messages %}
-                <li style="color: {{ 'green' if category == 'success' else 'red' }};">{{ message }}</li>
-            {% endfor %}
-            </ul>
-        {% endif %}
-        {% endwith %}
-    </div>
-</body>
-</html>
-"""
+# Instagram giriş bilgileri
+username = "kullanici_adi"  # Buraya kendi kullanıcı adınızı girin
+password = "sifre"          # Buraya kendi şifrenizi girin
 
-# Reels sonuçları için liste
-results = []
+# Instagram URL'si
+url = 'https://www.instagram.com'
 
-@app.route('/', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        try:
-            L.login(username, password)
-            flash("Giriş başarılı!", "success")
-            return redirect(url_for('reels'))
-        except Exception as e:
-            flash(f"Giriş başarısız: {str(e)}", "danger")
-            return redirect(url_for('login'))
+# Instagram'da giriş yapma fonksiyonu
+def login_to_instagram(driver, username, password):
+    driver.get(url)
+    sleep(2)
+    # Kullanıcı adı ve parola alanlarını bulma
+    username_input = driver.find_element("name", "username")
+    password_input = driver.find_element("name", "password")
+    # Kullanıcı adı ve parolayı girme
+    username_input.send_keys(username)
+    password_input.send_keys(password)
+    # Giriş yapma
+    password_input.send_keys(Keys.RETURN)
+    sleep(6)
 
-    return render_template_string(login_template)
+# Sayfayı belirli aralıklarla yenileme fonksiyonu
+def refresh_page(driver, target_url, refresh_interval=5, refresh_count=15):
+    driver.get(target_url)
+    for _ in range(refresh_count):
+        sleep(refresh_interval)
+        driver.refresh()
+        print(f'Refreshed the page {_+1} times')
 
+# Instagram'a giriş yap
+login_to_instagram(driver, username, password)
 
-@app.route('/reels', methods=['GET', 'POST'])
-def reels():
-    global results
-    if request.method == 'POST':
-        reels_link = request.form.get('reels_link')
-        views = request.form.get('views')
-        try:
-            # Simüle edilmiş izlenme işlemi
-            results.append({"link": reels_link, "views": views, "status": "Başarılı"})
-            flash("İzlenme gönderme işlemi başarılı!", "success")
-        except Exception as e:
-            results.append({"link": reels_link, "views": views, "status": f"Hata: {str(e)}"})
-            flash("Bir hata oluştu.", "danger")
-    return render_template_string(reels_template, results=results)
+# Yenilemek istediğiniz Instagram sayfasının URL'sini girin
+target_url = 'https://www.instagram.com/reel/C-Vk6RXPXKE/'
 
+# Yenileme işlemini başlat
+refresh_page(driver, target_url)
 
-if __name__ == '__main__':
-    app.run(debug=True, host="0.0.0.0")
+# WebDriver'ı kapatın
+driver.quit()
